@@ -6,14 +6,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title><%- title %></title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet">
+      <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined"
+      rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.13.0/css/all.min.css" />
     <link rel="stylesheet" href="./assets/style/all.css">
   </head>
 
   <body>
-    <nav>
-      <% current === 'front' ? - include('./navbar/front.ejs') : - include('./navbar/end.ejs')  %>
+    <nav class="py-11">
+
+      <% if (current === 'front') { %>
+        <%- include('./navbar/front.ejs') %>
+     <% } else { %>
+      <%- include('./navbar/back.ejs')%>
+     <% } %>
     </nav>
+    <div class="bg-black py-6"></div>
     <main>
       <%- contents %>
     </main>

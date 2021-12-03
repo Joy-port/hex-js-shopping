@@ -1,0 +1,159 @@
+.orderInfo {
+    padding: 60px 0;
+  }
+  
+  .orderInfo-form {
+    padding: 0 15px;
+  }
+  
+  .orderInfo-formGroup {
+    max-width: 365px;
+    margin: 0 auto 15px;
+  }
+  
+  .orderInfo-label {
+    display: block;
+    margin-bottom: 6px;
+  }
+  
+  .orderInfo-input {
+    width: 100%;
+    min-height: 38px;
+    border: 1px solid #CED4DA;
+    border-radius: 5px;
+    text-indent: 1rem;
+    margin-right: 10px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  
+  .orderInfo-inputWrap {
+    position: relative;
+  }
+  
+  .orderInfo-message {
+    position: absolute;
+    white-space: nowrap;
+    left: 103%;
+    top: 50%;
+    -webkit-transform: translateY(-50%);
+            transform: translateY(-50%);
+    color: #C72424;
+  }
+  
+  @media (max-width: 767px) {
+    .orderInfo-message {
+      position: static;
+      -webkit-transform: translateY(0);
+              transform: translateY(0);
+    }
+  }
+  
+  .orderInfo-btn {
+    display: block;
+    min-width: 255px;
+    min-height: 48px;
+    background-color: #000000;
+    color: #FFFFFF;
+    border: 0;
+    cursor: pointer;
+    font-size: 1.25rem;
+    margin: 50px auto 0;
+    border-radius: 5px;
+  }
+  
+  .orderInfo-btn:hover {
+    background-color: #301E5F;
+  }
+  
+  .orderPage-list {
+    padding: 60px 10px;
+    display: -webkit-box;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-box-orient: vertical;
+    -webkit-box-direction: normal;
+        -ms-flex-direction: column;
+            flex-direction: column;
+  }
+  
+  .orderPage-list .discardAllBtn {
+    -ms-flex-item-align: end;
+        align-self: flex-end;
+    margin-bottom: 12px;
+  }
+  
+  .orderPage-table {
+    border: 1px solid #000000;
+    width: 100%;
+  }
+  
+  .orderPage-table th, .orderPage-table td {
+    padding: 10px;
+    text-align: left;
+    border: 1px solid #000000;
+  }
+  
+  @media (max-width: 1110px) {
+    .orderPage-table {
+      width: 1100px;
+    }
+  }
+  
+  .delSingleOrder-Btn {
+    display: block;
+    background-color: #C44021;
+    color: #fff;
+    border: 0;
+    padding: 5px 10px;
+    cursor: pointer;
+  }
+  
+  .delSingleOrder-Btn:hover {
+    opacity: 0.8;
+  }
+  
+  .orderStatus {
+    position: relative;
+  }
+  
+  .orderStatus a {
+    position: absolute;
+    padding: 10px;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    display: block;
+    text-decoration: none;
+    color: #FFFFFF;
+  }
+  
+  .orderStatus-unDone {
+    background-color: #747474;
+  }
+  
+  .orderStatus-unDone:hover {
+    background-color: #000000;
+  }
+  
+  .orderStatus-done {
+    background-color: #000000;
+  }
+  
+  .orderStatus-done:hover {
+    background-color: #747474;
+  }
+  
+  .orderTableWrap {
+    overflow-x: scroll;
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+  }
+  
+  .orderTableWrap::-webkit-scrollbar {
+    display: none;
+  }
+  /*# sourceMappingURL=all.css.map */
