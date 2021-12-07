@@ -9,6 +9,7 @@ var cartProductId = '';
 var cartId = '';
 var orderData = [];
 var orderList = [];
+var cartNum = 1;
 
 function init() {
   if (document.querySelector('[data-page="front"]')) {
@@ -46,7 +47,7 @@ function renderProductList(inputData) {
   var productList = document.querySelector('.js-product-list');
   var str = '';
   inputData.forEach(function (item) {
-    var content = "\n    <li class=\"productCard d-flex flex-column justify-content-between\" data-id=\"".concat(item.id, "\" data-category=\"").concat(item.category, "\">\n    <div>\n      <h4 class=\"productType\">\u65B0\u54C1</h4>\n      <img src=\"").concat(item.images, "\" alt=\"product img\">\n      <a href=\"#\" class=\"addCardBtn js-addToCart\">\u52A0\u5165\u8CFC\u7269\u8ECA</a>\n      <h3>").concat(item.title, "</h3>\n    </div>\n      <div class=\"\">\n        <del class=\"originPrice\">NT$").concat(addCommaReg(item['origin_price']), "</del>\n        <p class=\"nowPrice\">NT$").concat(addCommaReg(item.price), "</p>\n      </div>\n    </li>\n    ");
+    var content = "\n    <li class=\"productCard d-flex flex-column justify-content-between\" data-id=\"".concat(item.id, "\" data-category=\"").concat(item.category, "\">\n    <div>\n      <h4 class=\"productType\">\u65B0\u54C1</h4>\n      <img src=\"").concat(item.images, "\" alt=\"product img\">\n      <a href=\"#\" class=\"addCardBtn js-addToCart\" data-num=\"1\">\u52A0\u5165\u8CFC\u7269\u8ECA</a>\n      <h3>").concat(item.title, "</h3>\n    </div>\n      <div>\n        <del class=\"originPrice\">NT$").concat(addCommaReg(item['origin_price']), "</del>\n        <p class=\"nowPrice\">NT$").concat(addCommaReg(item.price), "</p>\n      </div>\n    </li>\n    ");
     str += content;
   });
   productList.innerHTML = str;
@@ -73,14 +74,14 @@ function renderSelectList(e) {
   }
 
   renderProductList(filterData);
-} //加入購物車
+} //加入購物車 1
 
 
-function addCartItem(productId) {
+function addCartItem(productId, num) {
   axios.post("https://livejs-api.hexschool.io/api/livejs/v1/customer/".concat(api_path, "/carts"), {
     data: {
       "productId": productId,
-      "quantity": 1
+      "quantity": num
     }
   }).then(function (response) {
     getCartList();
@@ -98,26 +99,36 @@ function getCartList() {
 
 function addToCartData(e) {
   e.preventDefault();
-  var productId = e.target.closest('li').dataset.id;
-  addCartItem(productId);
+
+  if (e.target.closest('a').classList.contains('addCardBtn')) {
+    var productId = e.target.closest('li').dataset.id;
+    var clickNum = e.target.closest('a').dataset.num;
+    cartData.forEach(function (item) {
+      if (item.product.id === productId) {
+        cartNum += parseInt(clickNum);
+      }
+    });
+    addCartItem(productId, cartNum);
+  }
 } // render cartList
 
 
 function renderCartList(inputData) {
   var cartList = document.querySelector('.js-cartList');
   var num = 0;
-  var str = "<tr>\n  <th width=\"40%\">\u54C1\u9805</th>\n  <th width=\"15%\">\u55AE\u50F9</th>\n  <th width=\"15%\">\u6578\u91CF</th>\n  <th width=\"15%\">\u91D1\u984D</th>\n  <th width=\"15%\"></th>\n</tr>\n";
+  var str = "<tr>\n    <th width=\"40%\">\u54C1\u9805</th>\n    <th width=\"15%\">\u55AE\u50F9</th>\n    <th width=\"15%\">\u6578\u91CF</th>\n    <th width=\"15%\">\u91D1\u984D</th>\n    <th width=\"15%\"></th>\n  </tr>\n  ";
 
   if (inputData.length === 0) {
-    var content = "\n  <tr>\n    <td colspan=\"2\" class=\"mx-auto\" >\n      \u8CFC\u7269\u8ECA\u76EE\u524D\u662F\u7A7A\u7684\u5466\uFF5E\n    </td>\n  </tr>\n  ";
+    var content = "\n    <tr>\n      <td colspan=\"2\" class=\"mx-auto\" >\n        \u8CFC\u7269\u8ECA\u76EE\u524D\u662F\u7A7A\u7684\u5466\uFF5E\n      </td>\n    </tr>\n    ";
     str += content;
   } else {
+    console.log(inputData);
     inputData.forEach(function (item) {
-      var content = "\n    <tr data-cart-id=\"".concat(item.id, "\">\n    <td>\n        <div class=\"cardItem-title\">\n            <img src=\"").concat(item.product.images, "\" alt=\"img\">\n            <p>").concat(item.product.title, "</p>\n        </div>\n    </td>\n    <td>NT$").concat(addCommaReg(item.product.price), "</td>\n    <td>1</td>\n    <td>NT$").concat(addCommaReg(item.product['origin_price']), "</td>\n    <td class=\"discardBtn\">\n        <a href=\"#\" class=\"material-icons\" data-clear=\"single\">\n            clear\n        </a>\n    </td>\n  </tr>\n  ");
+      var content = "\n      <tr data-cart-id=\"".concat(item.id, "\">\n      <td>\n          <div class=\"cardItem-title\">\n              <img src=\"").concat(item.product.images, "\" alt=\"img\">\n              <p>").concat(item.product.title, "</p>\n          </div>\n      </td>\n      <td>NT$").concat(addCommaReg(item.product.price), "</td>\n      <td>").concat(item.quantity, "</td>\n      <td>NT$").concat(addCommaReg(item.product.price * item.quantity), "</td>\n      <td class=\"discardBtn\">\n          <a href=\"#\" class=\"material-icons\" data-clear=\"single\">\n              clear\n          </a>\n      </td>\n    </tr>\n    ");
       num += item.product.price;
       str += content;
     });
-    var endContent = "  <tr>\n  <td>\n      <a href=\"#\" class=\"discardAllBtn\" data-clear=\"all\">\u522A\u9664\u6240\u6709\u54C1\u9805</a>\n  </td>\n  <td></td>\n  <td></td>\n  <td>\n      <p>\u7E3D\u91D1\u984D</p>\n  </td>\n  <td>NT$".concat(addCommaReg(num), "</td>\n</tr>");
+    var endContent = "  <tr>\n    <td>\n        <a href=\"#\" class=\"discardAllBtn\" data-clear=\"all\">\u522A\u9664\u6240\u6709\u54C1\u9805</a>\n    </td>\n    <td></td>\n    <td></td>\n    <td>\n        <p>\u7E3D\u91D1\u984D</p>\n    </td>\n    <td>NT$".concat(addCommaReg(num), "</td>\n  </tr>");
     str += endContent;
   }
 
