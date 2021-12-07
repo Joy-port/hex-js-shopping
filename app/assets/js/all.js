@@ -8,6 +8,7 @@ let cartProductId = '';
 let cartId = '';
 let orderData= [];
 let orderList=[];
+let cartNum = 1 ;
 
 function init(){
   if(document.querySelector('[data-page="front"]')){
@@ -59,10 +60,10 @@ function renderProductList(inputData){
     <div>
       <h4 class="productType">新品</h4>
       <img src="${item.images}" alt="product img">
-      <a href="#" class="addCardBtn js-addToCart">加入購物車</a>
+      <a href="#" class="addCardBtn js-addToCart" data-num="1">加入購物車</a>
       <h3>${item.title}</h3>
     </div>
-      <div class="">
+      <div>
         <del class="originPrice">NT$${addCommaReg(item['origin_price'])}</del>
         <p class="nowPrice">NT$${addCommaReg(item.price)}</p>
       </div>
@@ -96,18 +97,17 @@ function renderSelectList(e){
 
 }
 
-//加入購物車
-function addCartItem(productId) {
+//加入購物車 1
+function addCartItem(productId, num) {
   axios.post(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/carts`, {
     data: {
       "productId": productId,
-      "quantity": 1
+      "quantity": num
     }
   }).
     then(function (response) {
       getCartList();
   })
-
 }
 
 //取得購物車清單
@@ -122,9 +122,19 @@ function getCartList() {
 //點擊監聽事件
 function addToCartData(e){
   e.preventDefault();
-  let productId = e.target.closest('li').dataset.id;
+  if(e.target.closest('a').classList.contains('addCardBtn')){
+    let productId = e.target.closest('li').dataset.id;
+    let clickNum = e.target.closest('a').dataset.num;
 
-  addCartItem(productId);
+    cartData.forEach(item =>{
+      if(item.product.id === productId ){
+        cartNum += parseInt(clickNum);
+      }
+    });
+
+    addCartItem(productId, cartNum);
+  }
+  
 
 }
 
@@ -133,63 +143,61 @@ function renderCartList(inputData){
   const cartList = document.querySelector('.js-cartList');
   let num = 0;
   let str = `<tr>
-  <th width="40%">品項</th>
-  <th width="15%">單價</th>
-  <th width="15%">數量</th>
-  <th width="15%">金額</th>
-  <th width="15%"></th>
-</tr>
-`;
+    <th width="40%">品項</th>
+    <th width="15%">單價</th>
+    <th width="15%">數量</th>
+    <th width="15%">金額</th>
+    <th width="15%"></th>
+  </tr>
+  `;
 
-if(inputData.length ===0 ){
-  let content = `
-  <tr>
-    <td colspan="2" class="mx-auto" >
-      購物車目前是空的呦～
-    </td>
-  </tr>
-  `;
-  str += content;
-  
-}else{
-  inputData.forEach(item =>{
+  if(inputData.length ===0 ){
     let content = `
-    <tr data-cart-id="${item.id}">
-    <td>
-        <div class="cardItem-title">
-            <img src="${item.product.images}" alt="img">
-            <p>${item.product.title}</p>
-        </div>
-    </td>
-    <td>NT$${addCommaReg(item.product.price)}</td>
-    <td>1</td>
-    <td>NT$${addCommaReg(item.product['origin_price'])}</td>
-    <td class="discardBtn">
-        <a href="#" class="material-icons" data-clear="single">
-            clear
-        </a>
-    </td>
-  </tr>
-  `;
-    num += item.product.price;
+    <tr>
+      <td colspan="2" class="mx-auto" >
+        購物車目前是空的呦～
+      </td>
+    </tr>
+    `;
     str += content;
-  })
-  let endContent = `  <tr>
-  <td>
-      <a href="#" class="discardAllBtn" data-clear="all">刪除所有品項</a>
-  </td>
-  <td></td>
-  <td></td>
-  <td>
-      <p>總金額</p>
-  </td>
-  <td>NT$${addCommaReg(num)}</td>
-</tr>`
-  str += endContent ;
-}
-  
- 
-  
+    
+  }else{
+    console.log(inputData);
+    inputData.forEach(item =>{
+      let content = `
+      <tr data-cart-id="${item.id}">
+      <td>
+          <div class="cardItem-title">
+              <img src="${item.product.images}" alt="img">
+              <p>${item.product.title}</p>
+          </div>
+      </td>
+      <td>NT$${addCommaReg(item.product.price)}</td>
+      <td>${item.quantity}</td>
+      <td>NT$${addCommaReg(item.product.price*item.quantity)}</td>
+      <td class="discardBtn">
+          <a href="#" class="material-icons" data-clear="single">
+              clear
+          </a>
+      </td>
+    </tr>
+    `;
+      num += item.product.price;
+      str += content;
+    })
+    let endContent = `  <tr>
+    <td>
+        <a href="#" class="discardAllBtn" data-clear="all">刪除所有品項</a>
+    </td>
+    <td></td>
+    <td></td>
+    <td>
+        <p>總金額</p>
+    </td>
+    <td>NT$${addCommaReg(num)}</td>
+  </tr>`
+    str += endContent ;
+  }
   cartList.innerHTML =str;
 
 }
@@ -304,8 +312,6 @@ function createOrder(userData) {
       console.log('error',error.response.data.message);
     })
 }
-
-
 
 //back
 function getOrderList() {
