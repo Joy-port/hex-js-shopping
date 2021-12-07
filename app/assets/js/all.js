@@ -5,6 +5,8 @@ const token = "PSNly2pd99XQct8dnO9toWyVyO13";
 let productData =[];
 let cartData= [];
 let cartProductId = '';
+let cartId = '';
+let orderData= [];
 
 function init(){
   if(document.querySelector('[data-page="front"]')){
@@ -27,12 +29,18 @@ function getProductList() {
     .then(function (response) {
       productData = response.data.products;
       renderProductList(productData);
-
       const selectList = document.querySelector('.js-select');
       selectList.addEventListener('change', renderSelectList);
 
       const addCartBtn = document.querySelectorAll('.js-addToCart');
       addCartBtn.forEach(item => item.addEventListener('click', addToCartData));
+
+      const cartList = document.querySelector('.js-cartList');
+      cartList.addEventListener('click', deleteCartId);
+
+      const formList = document.querySelector('.js-form');
+      formList.addEventListener('submit',getOrderData);
+
     })
     .catch(function(error){
       console.log('error', error)
@@ -86,7 +94,6 @@ function renderSelectList(e){
 
 }
 
-
 //加入購物車
 function addCartItem(productId) {
   axios.post(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/carts`, {
@@ -96,9 +103,8 @@ function addCartItem(productId) {
     }
   }).
     then(function (response) {
-      console.log(response.data.cart);
       getCartList();
-    })
+  })
 
 }
 
@@ -123,11 +129,30 @@ function addToCartData(e){
 // render cartList
 function renderCartList(inputData){
   const cartList = document.querySelector('.js-cartList');
+  let num = 0;
+  let str = `<tr>
+  <th width="40%">品項</th>
+  <th width="15%">單價</th>
+  <th width="15%">數量</th>
+  <th width="15%">金額</th>
+  <th width="15%"></th>
+</tr>
+`;
 
-  let str = '';
+if(inputData.length ===0 ){
+  let content = `
+  <tr>
+    <td colspan="2" class="mx-auto" >
+      購物車目前是空的呦～
+    </td>
+  </tr>
+  `;
+  str += content;
+  
+}else{
   inputData.forEach(item =>{
     let content = `
-    <tr>
+    <tr data-cart-id="${item.id}">
     <td>
         <div class="cardItem-title">
             <img src="${item.product.images}" alt="img">
@@ -138,16 +163,129 @@ function renderCartList(inputData){
     <td>1</td>
     <td>NT$${addCommaReg(item.product['origin_price'])}</td>
     <td class="discardBtn">
-        <a href="#" class="material-icons">
+        <a href="#" class="material-icons" data-clear="single">
             clear
         </a>
     </td>
   </tr>
   `;
-
+    num += item.product.price;
     str += content;
   })
-  cartList.innerHTML = str;
+  let endContent = `  <tr>
+  <td>
+      <a href="#" class="discardAllBtn" data-clear="all">刪除所有品項</a>
+  </td>
+  <td></td>
+  <td></td>
+  <td>
+      <p>總金額</p>
+  </td>
+  <td>NT$${addCommaReg(num)}</td>
+</tr>`
+  str += endContent ;
+}
+  
+ 
+  
+  cartList.innerHTML =str;
+
+}
+
+// 刪除 cart id
+function deleteCartId(e){
+  if(document.querySelector('.js-cartList')){
+    console.log(e.target.dataset.clear);
+
+    // if(e.target.nodeList)
+    if(e.target.dataset.clear === 'single'){
+      e.preventDefault();
+      cartId = e.target.closest('tr').dataset.cartId;
+
+     deleteCartItem(cartId);
+    }else if(e.target.dataset.clear === 'all'){
+      e.preventDefault();
+      deleteAllCartList();
+    };
+
+  }
+}
+
+// 刪除購物車內特定產品
+function deleteCartItem(cartId) {
+  axios.delete(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/carts/${cartId}`).
+    then(function (response) {
+      cartData = response.data.carts ;
+      getCartList()
+    })
+}
+
+//刪除所有產品
+function deleteAllCartList() {
+  axios.delete(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/carts`).
+    then(function (response) {
+      cartData = response.data.carts ;
+      getCartList()
+    })
+}
+
+//送出表單
+function getOrderData(e){
+  if(e.target.classList.contains('js-form')){
+    const inputGroup = document.querySelectorAll('input');
+    const select = document.querySelector('#tradeWay');
+    if(cartData.length === 0){
+      alert('購物車沒有東西呦～趕快去購物吧！')
+      return;
+    }
+    for(let i = 0; i < inputGroup.length ; i++){
+      if(inputGroup[i].getAttribute('type')!=='submit'){
+        if(inputGroup[i].value.length === 0){
+          alert( `${inputGroup[i].placeholder}!`);
+          return;
+        }else{
+          if( i+2 != inputGroup.length){
+            orderData.push(inputGroup[i].value.trim());
+          }else{
+            orderData.push(inputGroup[i].value.trim());
+            orderData.push(select.value);
+            createOrder(orderData) ;
+          }
+        }
+      }
+    }
+   
+  }
+}
+
+function createOrder(orderData) {
+  let userData = {
+    "name": orderData[0].toString(),
+    "tel": orderData[1].toString(),
+    "email": orderData[2].toString(),
+    "address": orderData[3].toString(),
+    "payment": orderData[4].toString()
+  };
+  
+  axios.post(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/orders`,
+    {
+      "data": {
+        "user": {
+          "name": "六角學院",
+          "tel": "07-5313506",
+          "email": "hexschool@hexschool.com",
+          "address": "高雄市六角學院路",
+          "payment": "Apple Pay"
+        }
+      }
+    }
+  ).then(function (response) {
+      console.log('success');
+      console.log(response.data);
+    })
+    .catch(function(error){
+      console.log(error);
+    })
 }
 
 // C3.js
@@ -169,4 +307,3 @@ let chart = c3.generate({
       }
   },
 });
- 
