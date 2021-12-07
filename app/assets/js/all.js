@@ -7,13 +7,14 @@ let cartData= [];
 let cartProductId = '';
 let cartId = '';
 let orderData= [];
+let orderList=[];
 
 function init(){
   if(document.querySelector('[data-page="front"]')){
     getProductList();
     getCartList();
   }else{
-
+    getOrderList();
   }
 }
 
@@ -238,6 +239,13 @@ function getOrderData(e){
       alert('購物車沒有東西呦～趕快去購物吧！')
       return;
     }
+
+  const year = new Date().getFullYear() ;
+  const month = (new Date().getMonth() + 1 < 10 ? '0' : '') + (new Date().getMonth() + 1) ;  //十位數＋個位數
+  const date = (new Date().getDate() < 10 ? '0' : '') + new Date().getDate() ;
+  let dateValue = `${year}/${month}/${date}`;
+
+
     for(let i = 0; i < inputGroup.length ; i++){
       if(inputGroup[i].getAttribute('type')!=='submit'){
         if(inputGroup[i].value.length === 0){
@@ -248,7 +256,8 @@ function getOrderData(e){
             orderData.push(inputGroup[i].value.trim());
           }else{
             orderData.push(inputGroup[i].value.trim());
-            orderData.push(select.value);
+            orderData.push(select.value); 
+            orderData.push(dateValue);
             createOrder(orderData) ;
           }
         }
@@ -271,11 +280,11 @@ function createOrder(orderData) {
     {
       "data": {
         "user": {
-          "name": "六角學院",
-          "tel": "07-5313506",
-          "email": "hexschool@hexschool.com",
-          "address": "高雄市六角學院路",
-          "payment": "Apple Pay"
+          "name": orderData[0].toString(),
+          "tel": orderData[1].toString(),
+          "email": orderData[2].toString(),
+          "address": orderData[3].toString(),
+          "payment": orderData[4].toString()
         }
       }
     }
@@ -307,3 +316,75 @@ let chart = c3.generate({
       }
   },
 });
+
+//back
+function getOrderList() {
+  axios.get(`https://livejs-api.hexschool.io/api/livejs/v1/admin/${api_path}/orders`,
+    {
+      headers: {
+        'Authorization': token
+      }
+    })
+    .then(function (response) {
+      orderList = response.data.orders;
+      console.log(orderList);
+      renderOrderList(orderList);
+    })
+}
+
+function renderOrderList(orderList){
+  const orderTable = document.querySelector('.js-order-list');
+  let str = '';
+  str += ` <thead>
+  <tr>
+      <th>訂單編號</th>
+      <th>聯絡人</th>
+      <th>聯絡地址</th>
+      <th>電子郵件</th>
+      <th>訂單品項</th>
+      <th>訂單日期</th>
+      <th>訂單狀態</th>
+      <th>操作</th>
+  </tr>
+</thead>`;
+  orderList.forEach(item =>{
+    item.products.forEach(productItem =>{
+      let productName = `
+      <p>${productItem.title}</p>
+      `;
+      let nameStr ='';
+      nameStr += productName;
+
+      let content = `
+      <tr  data-id="${item.id}">
+        <td>${item.createdAt}</td>
+        <td>
+            <p>${item.user.name}</p>
+            <p>${item.user.tel}</p>
+        </td>
+        <td>${item.user.address}</td>
+        <td>${item.user.email}</td>
+        <td>
+            ${nameStr}
+        </td>
+        <td>2021/03/08</td>
+        <td class="orderStatus">
+            <a href="#">未處理</a>
+        </td>
+        <td>
+            <input type="button" class="delSingleOrder-Btn" value="刪除">
+        </td>
+      </tr>
+      `
+      str += content;
+    })
+  })
+
+  orderTable.innerHTML = str;
+  dateReg()
+}
+
+function dateReg(){
+  let date = new Date(1638848349).getFullYear;
+  console.log(date);
+}
