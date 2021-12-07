@@ -15,6 +15,7 @@ function init(){
     getCartList();
   }else{
     getOrderList();
+    
   }
 }
 
@@ -233,6 +234,7 @@ function deleteAllCartList() {
 //送出表單
 function getOrderData(e){
   if(e.target.classList.contains('js-form')){
+    e.preventDefault();
     const inputGroup = document.querySelectorAll('input');
     const select = document.querySelector('#tradeWay');
     if(cartData.length === 0){
@@ -258,7 +260,16 @@ function getOrderData(e){
             orderData.push(inputGroup[i].value.trim());
             orderData.push(select.value); 
             orderData.push(dateValue);
-            createOrder(orderData) ;
+
+            let userData = {
+              "name": orderData[0],
+              "tel": orderData[1],
+              "email": orderData[2],
+              "address": orderData[3],
+              "payment": orderData[4]
+            };
+            console.log(userData);
+            createOrder(userData) ;
           }
         }
       }
@@ -267,55 +278,34 @@ function getOrderData(e){
   }
 }
 
-function createOrder(orderData) {
-  let userData = {
-    "name": orderData[0].toString(),
-    "tel": orderData[1].toString(),
-    "email": orderData[2].toString(),
-    "address": orderData[3].toString(),
-    "payment": orderData[4].toString()
-  };
-  
+function createOrder(userData) {
   axios.post(`https://livejs-api.hexschool.io/api/livejs/v1/customer/${api_path}/orders`,
     {
       "data": {
-        "user": {
-          "name": orderData[0].toString(),
-          "tel": orderData[1].toString(),
-          "email": orderData[2].toString(),
-          "address": orderData[3].toString(),
-          "payment": orderData[4].toString()
-        }
+        "user": userData
       }
     }
-  ).then(function (response) {
-      console.log('success');
-      console.log(response.data);
+  ).
+  then(function (response) {
+      alert('訂單已送出囉～');
+      const inputGroup = document.querySelectorAll('input');
+      const select = document.querySelector('#tradeWay');
+
+      inputGroup.forEach(item=>{
+        if(item.getAttribute('type')!=='submit'){
+          item.value ='';
+        }
+      })
+      select.value = 'ATM';
+      getCartList();
+
     })
     .catch(function(error){
-      console.log(error);
+      console.log('error',error.response.data.message);
     })
 }
 
-// C3.js
-let chart = c3.generate({
-  bindto: '#chart', // HTML 元素綁定
-  data: {
-      type: "pie",
-      columns: [
-      ['Louvre 雙人床架', 1],
-      ['Antony 雙人床架', 2],
-      ['Anty 雙人床架', 3],
-      ['其他', 4],
-      ],
-      colors:{
-          "Louvre 雙人床架":"#DACBFF",
-          "Antony 雙人床架":"#9D7FEA",
-          "Anty 雙人床架": "#5434A7",
-          "其他": "#301E5F",
-      }
-  },
-});
+
 
 //back
 function getOrderList() {
@@ -327,12 +317,17 @@ function getOrderList() {
     })
     .then(function (response) {
       orderList = response.data.orders;
-      console.log(orderList);
       renderOrderList(orderList);
+      getChartData(orderList)
+
+      const deleteAll = document.querySelectorAll('[data-del]');
+      deleteAll.forEach(item => item.addEventListener('click', deleteOrders));
+
+      getOrderStatus();
     })
 }
 
-function renderOrderList(orderList){
+function renderOrderList(inputData){
   const orderTable = document.querySelector('.js-order-list');
   let str = '';
   str += ` <thead>
@@ -347,44 +342,189 @@ function renderOrderList(orderList){
       <th>操作</th>
   </tr>
 </thead>`;
-  orderList.forEach(item =>{
-    item.products.forEach(productItem =>{
-      let productName = `
-      <p>${productItem.title}</p>
-      `;
-      let nameStr ='';
-      nameStr += productName;
+  if(inputData.length === 0){
+    let content = `
+    <tr>
+      <td colspan="9">目前沒有訂單呦～</td>
+    </tr>
+    `
+    str += content;
+  }else{
+    orderList = sortOrderList(inputData);
+    orderList.forEach(item =>{
+      item.products.forEach(productItem =>{
+        let content = `
+        <tr  data-id="${item.id}">
+          <td>${item.createdAt}</td>
+          <td>
+              <p>${item.user.name}</p>
+              <p>${item.user.tel}</p>
+          </td>
+          <td>${item.user.address}</td>
+          <td>${item.user.email}</td>
+          <td>
+            <p>${productItem.title}</p>
+          </td>
+          <td>${dateReg(item.createdAt)}</td>
+          <td class="orderStatus">
+              <a href="#" class="js-status" data-status="${item.paid ? 'true':'false'}">${item.paid ? '已處理':'未處理'}</a>
+          </td>
+          <td>
+              <input type="button" class="delSingleOrder-Btn" value="刪除" data-del="single">
+          </td>
+        </tr>
+        `
+        str += content;
+      })
+    })
+    
+  }
 
-      let content = `
-      <tr  data-id="${item.id}">
-        <td>${item.createdAt}</td>
-        <td>
-            <p>${item.user.name}</p>
-            <p>${item.user.tel}</p>
-        </td>
-        <td>${item.user.address}</td>
-        <td>${item.user.email}</td>
-        <td>
-            ${nameStr}
-        </td>
-        <td>2021/03/08</td>
-        <td class="orderStatus">
-            <a href="#">未處理</a>
-        </td>
-        <td>
-            <input type="button" class="delSingleOrder-Btn" value="刪除">
-        </td>
-      </tr>
-      `
-      str += content;
+  orderTable.innerHTML = str;
+}
+
+//訂單日期
+function dateReg(inputDate){
+  let date = new Date(inputDate*1000)
+  return date.toLocaleDateString();
+}
+
+
+function sortOrderList(inputData){
+  inputData.sort((a,b)=>{
+    return a.createdAt - b.createdAt
+  })
+  return inputData
+}
+
+function deleteOrders(e){
+  if(e.target.dataset.del){
+    e.preventDefault()
+    if(e.target.dataset.del==='all'){
+      deleteAllOrder();
+    }else if(e.target.dataset.del === 'single'){
+      let id = e.target.closest('tr').dataset.id;
+      deleteOrderItem(id);
+    }
+  }
+}
+
+// 刪除全部訂單
+function deleteAllOrder() {
+  axios.delete(`https://livejs-api.hexschool.io/api/livejs/v1/admin/${api_path}/orders`,
+    {
+      headers: {
+        'Authorization': token
+      }
+    })
+    .then(function (response) {
+      getOrderList();
+    })
+}
+
+
+// 刪除特定訂單
+function deleteOrderItem(orderId) {
+  axios.delete(`https://livejs-api.hexschool.io/api/livejs/v1/admin/${api_path}/orders/${orderId}`,
+    {
+      headers: {
+        'Authorization': token
+      }
+    })
+    .then(function (response) {
+      getOrderList();
+    })
+}
+
+
+// 修改訂單狀態
+
+function editOrderList(orderId, orderStatus) {
+  axios.put(`https://livejs-api.hexschool.io/api/livejs/v1/admin/${api_path}/orders`,
+    {
+      "data": {
+        "id": orderId,
+        "paid": orderStatus
+      }
+    },
+    {
+      headers: {
+        'Authorization': token
+      }
+    })
+    .then(function (response) {
+      console.log(response);
+      getOrderList();
+    })
+}
+
+
+function getOrderStatus(){
+  if(document.querySelector('.js-status')){
+    const statusBtn = document.querySelectorAll('.js-status');
+    statusBtn.forEach(item =>{
+      item.addEventListener('click',editOrderStatus);
+    })
+  }
+}
+
+function editOrderStatus(e){
+  e.preventDefault();
+  if(e.target.classList.contains('js-status')){
+    let orderId = e.target.closest('tr').dataset.id;
+    let orderStatus = null;
+    if(e.target.closest('a').dataset.status === 'true'){
+       orderStatus = false;
+    }else{
+       orderStatus = true;
+    }
+    editOrderList(orderId,orderStatus);
+  }
+}
+
+function getChartData(orderList){
+  console.log(orderList);
+
+  let productObj ={};
+  orderList.forEach(item =>{
+    item.products.forEach(productItem=>{
+      if(productObj[productItem.title]){
+          productObj[productItem.title] += parseInt(productItem.quantity);
+      }else if(!productObj[productItem.title]){
+        productObj[productItem.title]= parseInt(productItem.quantity);
+      }
     })
   })
 
-  orderTable.innerHTML = str;
-  dateReg()
+  let aryObj = Object.keys(productObj);
+  let chartData = []
+
+  aryObj.forEach(item =>{
+    let ary =[];
+    ary.push(item);
+    ary.push(productObj[item]);
+    chartData.push(ary);
+  })
+
+  generateChart(chartData);
 }
 
-function dateReg(){
-  let date = new Date(1638848349).getFullYear;
-  console.log(date);
+function generateChart(chartData){
+  // C3.js
+  let chart = c3.generate({
+    bindto: '#chart', // HTML 元素綁定
+    data: {
+        type: "pie",
+        columns: chartData,
+        colors:{
+          "Louvre 雙人床架":"#DACBFF",
+          "Antony 雙人床架":"#9D7FEA",
+          "Anty 雙人床架": "#5434A7",
+          "其他": "#301E5F",
+        }
+    },
+
+  });
+
 }
+
