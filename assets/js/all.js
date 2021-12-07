@@ -8,12 +8,15 @@ var cartData = [];
 var cartProductId = '';
 var cartId = '';
 var orderData = [];
+var orderList = [];
 
 function init() {
   if (document.querySelector('[data-page="front"]')) {
     getProductList();
     getCartList();
-  } else {}
+  } else {
+    getOrderList();
+  }
 }
 
 init(); //font 
@@ -158,6 +161,7 @@ function deleteAllCartList() {
 
 function getOrderData(e) {
   if (e.target.classList.contains('js-form')) {
+    e.preventDefault();
     var inputGroup = document.querySelectorAll('input');
     var select = document.querySelector('#tradeWay');
 
@@ -165,6 +169,12 @@ function getOrderData(e) {
       alert('購物車沒有東西呦～趕快去購物吧！');
       return;
     }
+
+    var year = new Date().getFullYear();
+    var month = (new Date().getMonth() + 1 < 10 ? '0' : '') + (new Date().getMonth() + 1); //十位數＋個位數
+
+    var date = (new Date().getDate() < 10 ? '0' : '') + new Date().getDate();
+    var dateValue = "".concat(year, "/").concat(month, "/").concat(date);
 
     for (var i = 0; i < inputGroup.length; i++) {
       if (inputGroup[i].getAttribute('type') !== 'submit') {
@@ -177,7 +187,16 @@ function getOrderData(e) {
           } else {
             orderData.push(inputGroup[i].value.trim());
             orderData.push(select.value);
-            createOrder(orderData);
+            orderData.push(dateValue);
+            var userData = {
+              "name": orderData[0],
+              "tel": orderData[1],
+              "email": orderData[2],
+              "address": orderData[3],
+              "payment": orderData[4]
+            };
+            console.log(userData);
+            createOrder(userData);
           }
         }
       }
@@ -185,45 +204,195 @@ function getOrderData(e) {
   }
 }
 
-function createOrder(orderData) {
-  var userData = {
-    "name": orderData[0].toString(),
-    "tel": orderData[1].toString(),
-    "email": orderData[2].toString(),
-    "address": orderData[3].toString(),
-    "payment": orderData[4].toString()
-  };
+function createOrder(userData) {
   axios.post("https://livejs-api.hexschool.io/api/livejs/v1/customer/".concat(api_path, "/orders"), {
     "data": {
-      "user": {
-        "name": "六角學院",
-        "tel": "07-5313506",
-        "email": "hexschool@hexschool.com",
-        "address": "高雄市六角學院路",
-        "payment": "Apple Pay"
-      }
+      "user": userData
     }
   }).then(function (response) {
-    console.log('success');
-    console.log(response.data);
+    alert('訂單已送出囉～');
+    var inputGroup = document.querySelectorAll('input');
+    var select = document.querySelector('#tradeWay');
+    inputGroup.forEach(function (item) {
+      if (item.getAttribute('type') !== 'submit') {
+        item.value = '';
+      }
+    });
+    select.value = 'ATM';
+    getCartList();
   })["catch"](function (error) {
-    console.log(error);
+    console.log('error', error.response.data.message);
   });
-} // C3.js
+} //back
 
 
-var chart = c3.generate({
-  bindto: '#chart',
-  // HTML 元素綁定
-  data: {
-    type: "pie",
-    columns: [['Louvre 雙人床架', 1], ['Antony 雙人床架', 2], ['Anty 雙人床架', 3], ['其他', 4]],
-    colors: {
-      "Louvre 雙人床架": "#DACBFF",
-      "Antony 雙人床架": "#9D7FEA",
-      "Anty 雙人床架": "#5434A7",
-      "其他": "#301E5F"
+function getOrderList() {
+  axios.get("https://livejs-api.hexschool.io/api/livejs/v1/admin/".concat(api_path, "/orders"), {
+    headers: {
+      'Authorization': token
+    }
+  }).then(function (response) {
+    orderList = response.data.orders;
+    renderOrderList(orderList);
+    getChartData(orderList);
+    var deleteAll = document.querySelectorAll('[data-del]');
+    deleteAll.forEach(function (item) {
+      return item.addEventListener('click', deleteOrders);
+    });
+    getOrderStatus();
+  });
+}
+
+function renderOrderList(inputData) {
+  var orderTable = document.querySelector('.js-order-list');
+  var str = '';
+  str += " <thead>\n  <tr>\n      <th>\u8A02\u55AE\u7DE8\u865F</th>\n      <th>\u806F\u7D61\u4EBA</th>\n      <th>\u806F\u7D61\u5730\u5740</th>\n      <th>\u96FB\u5B50\u90F5\u4EF6</th>\n      <th>\u8A02\u55AE\u54C1\u9805</th>\n      <th>\u8A02\u55AE\u65E5\u671F</th>\n      <th>\u8A02\u55AE\u72C0\u614B</th>\n      <th>\u64CD\u4F5C</th>\n  </tr>\n</thead>";
+
+  if (inputData.length === 0) {
+    var content = "\n    <tr>\n      <td colspan=\"9\">\u76EE\u524D\u6C92\u6709\u8A02\u55AE\u5466\uFF5E</td>\n    </tr>\n    ";
+    str += content;
+  } else {
+    orderList = sortOrderList(inputData);
+    orderList.forEach(function (item) {
+      item.products.forEach(function (productItem) {
+        var content = "\n        <tr  data-id=\"".concat(item.id, "\">\n          <td>").concat(item.createdAt, "</td>\n          <td>\n              <p>").concat(item.user.name, "</p>\n              <p>").concat(item.user.tel, "</p>\n          </td>\n          <td>").concat(item.user.address, "</td>\n          <td>").concat(item.user.email, "</td>\n          <td>\n            <p>").concat(productItem.title, "</p>\n          </td>\n          <td>").concat(dateReg(item.createdAt), "</td>\n          <td class=\"orderStatus\">\n              <a href=\"#\" class=\"js-status\" data-status=\"").concat(item.paid ? 'true' : 'false', "\">").concat(item.paid ? '已處理' : '未處理', "</a>\n          </td>\n          <td>\n              <input type=\"button\" class=\"delSingleOrder-Btn\" value=\"\u522A\u9664\" data-del=\"single\">\n          </td>\n        </tr>\n        ");
+        str += content;
+      });
+    });
+  }
+
+  orderTable.innerHTML = str;
+} //訂單日期
+
+
+function dateReg(inputDate) {
+  var date = new Date(inputDate * 1000);
+  return date.toLocaleDateString();
+}
+
+function sortOrderList(inputData) {
+  inputData.sort(function (a, b) {
+    return a.createdAt - b.createdAt;
+  });
+  return inputData;
+}
+
+function deleteOrders(e) {
+  if (e.target.dataset.del) {
+    e.preventDefault();
+
+    if (e.target.dataset.del === 'all') {
+      deleteAllOrder();
+    } else if (e.target.dataset.del === 'single') {
+      var id = e.target.closest('tr').dataset.id;
+      deleteOrderItem(id);
     }
   }
-});
+} // 刪除全部訂單
+
+
+function deleteAllOrder() {
+  axios["delete"]("https://livejs-api.hexschool.io/api/livejs/v1/admin/".concat(api_path, "/orders"), {
+    headers: {
+      'Authorization': token
+    }
+  }).then(function (response) {
+    getOrderList();
+  });
+} // 刪除特定訂單
+
+
+function deleteOrderItem(orderId) {
+  axios["delete"]("https://livejs-api.hexschool.io/api/livejs/v1/admin/".concat(api_path, "/orders/").concat(orderId), {
+    headers: {
+      'Authorization': token
+    }
+  }).then(function (response) {
+    getOrderList();
+  });
+} // 修改訂單狀態
+
+
+function editOrderList(orderId, orderStatus) {
+  axios.put("https://livejs-api.hexschool.io/api/livejs/v1/admin/".concat(api_path, "/orders"), {
+    "data": {
+      "id": orderId,
+      "paid": orderStatus
+    }
+  }, {
+    headers: {
+      'Authorization': token
+    }
+  }).then(function (response) {
+    console.log(response);
+    getOrderList();
+  });
+}
+
+function getOrderStatus() {
+  if (document.querySelector('.js-status')) {
+    var statusBtn = document.querySelectorAll('.js-status');
+    statusBtn.forEach(function (item) {
+      item.addEventListener('click', editOrderStatus);
+    });
+  }
+}
+
+function editOrderStatus(e) {
+  e.preventDefault();
+
+  if (e.target.classList.contains('js-status')) {
+    var orderId = e.target.closest('tr').dataset.id;
+    var orderStatus = null;
+
+    if (e.target.closest('a').dataset.status === 'true') {
+      orderStatus = false;
+    } else {
+      orderStatus = true;
+    }
+
+    editOrderList(orderId, orderStatus);
+  }
+}
+
+function getChartData(orderList) {
+  console.log(orderList);
+  var productObj = {};
+  orderList.forEach(function (item) {
+    item.products.forEach(function (productItem) {
+      if (productObj[productItem.title]) {
+        productObj[productItem.title] += parseInt(productItem.quantity);
+      } else if (!productObj[productItem.title]) {
+        productObj[productItem.title] = parseInt(productItem.quantity);
+      }
+    });
+  });
+  var aryObj = Object.keys(productObj);
+  var chartData = [];
+  aryObj.forEach(function (item) {
+    var ary = [];
+    ary.push(item);
+    ary.push(productObj[item]);
+    chartData.push(ary);
+  });
+  generateChart(chartData);
+}
+
+function generateChart(chartData) {
+  // C3.js
+  var chart = c3.generate({
+    bindto: '#chart',
+    // HTML 元素綁定
+    data: {
+      type: "pie",
+      columns: chartData,
+      colors: {
+        "Louvre 雙人床架": "#DACBFF",
+        "Antony 雙人床架": "#9D7FEA",
+        "Anty 雙人床架": "#5434A7",
+        "其他": "#301E5F"
+      }
+    }
+  });
+}
 //# sourceMappingURL=all.js.map
