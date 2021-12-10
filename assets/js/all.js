@@ -15,6 +15,7 @@ function init() {
   if (document.querySelector('[data-page="front"]')) {
     getProductList();
     getCartList();
+    validateForm();
   } else {
     getOrderList();
   }
@@ -122,7 +123,6 @@ function renderCartList(inputData) {
     var content = "\n    <tr>\n      <td colspan=\"2\" class=\"mx-auto\" >\n        \u8CFC\u7269\u8ECA\u76EE\u524D\u662F\u7A7A\u7684\u5466\uFF5E\n      </td>\n    </tr>\n    ";
     str += content;
   } else {
-    console.log(inputData);
     inputData.forEach(function (item) {
       var content = "\n      <tr data-cart-id=\"".concat(item.id, "\">\n      <td>\n          <div class=\"cardItem-title\">\n              <img src=\"").concat(item.product.images, "\" alt=\"img\">\n              <p>").concat(item.product.title, "</p>\n          </div>\n      </td>\n      <td>NT$").concat(addCommaReg(item.product.price), "</td>\n      <td>").concat(item.quantity, "</td>\n      <td>NT$").concat(addCommaReg(item.product.price * item.quantity), "</td>\n      <td class=\"discardBtn\">\n          <a href=\"#\" class=\"material-icons\" data-clear=\"single\">\n              clear\n          </a>\n      </td>\n    </tr>\n    ");
       num += item.product.price;
@@ -404,6 +404,54 @@ function generateChart(chartData) {
         "其他": "#301E5F"
       }
     }
+  });
+} //validate.js
+
+
+function validateForm() {
+  var formList = document.querySelector('.js-form');
+  var constraints = {
+    '姓名': {
+      presence: {
+        message: "是必填欄位"
+      }
+    },
+    '電話': {
+      presence: {
+        message: "是必填欄位"
+      }
+    },
+    'Email': {
+      presence: {
+        message: "是必填欄位"
+      },
+      email: {
+        message: "請輸入正確信箱格式"
+      }
+    },
+    '寄送地址': {
+      presence: {
+        message: "是必填欄位"
+      }
+    },
+    '交易方式': {
+      presence: {
+        message: "是必填欄位"
+      }
+    }
+  };
+  formList.querySelectorAll('.orderInfo-input').forEach(function (item) {
+    item.addEventListener('change', function () {
+      var errors = validate(formList, constraints);
+      item.nextElementSibling.textContent = '';
+
+      if (errors) {
+        Object.keys(errors).forEach(function (keys) {
+          // console.log(errors[keys]);
+          document.querySelector("[data-message=\"".concat(keys, "\"]")).textContent = errors[keys];
+        });
+      }
+    });
   });
 }
 //# sourceMappingURL=all.js.map
