@@ -14,6 +14,7 @@ function init(){
   if(document.querySelector('[data-page="front"]')){
     getProductList();
     getCartList();
+    validateForm();
   }else{
     getOrderList();
     
@@ -162,7 +163,6 @@ function renderCartList(inputData){
     str += content;
     
   }else{
-    console.log(inputData);
     inputData.forEach(item =>{
       let content = `
       <tr data-cart-id="${item.id}">
@@ -529,8 +529,55 @@ function generateChart(chartData){
           "其他": "#301E5F",
         }
     },
-
   });
-
 }
 
+//validate.js
+
+function validateForm(){
+  const formList = document.querySelector('.js-form');
+  const constraints = {
+    '姓名': {
+      presence: {
+        message: "是必填欄位"
+      },
+    },
+    '電話': {
+      presence: {
+        message: "是必填欄位"
+      },
+    },
+    'Email': {
+      presence: {
+        message: "是必填欄位"
+      },
+      email: {
+        message:"請輸入正確信箱格式",
+      }
+    },
+    '寄送地址': {
+      presence: {
+        message: "是必填欄位"
+      },
+    },
+    '交易方式':{
+      presence: {
+        message: "是必填欄位"
+      },
+    },
+  };
+
+  formList.querySelectorAll('.orderInfo-input').forEach(item=>{
+    item.addEventListener('change', function (){
+      let  errors = validate(formList,constraints);
+      item.nextElementSibling.textContent = '';
+      
+      if(errors){
+        Object.keys(errors).forEach(keys =>{
+          // console.log(errors[keys]);
+          document.querySelector(`[data-message="${keys}"]`).textContent = errors[keys];
+        })
+      }
+    });
+  });
+}
